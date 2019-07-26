@@ -56,9 +56,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.ops4j.pax.logging</groupId>
-            <artifactId>pax-logging-api</artifactId>
-            <version>${pax.logging.api.version}</version>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>${common.logging.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-lang.wso2</groupId>
@@ -152,31 +152,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>${maven.shadeplugin.version}</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
     <distributionManagement>
@@ -214,10 +189,9 @@
         <version.com.google.code.gson>2.8.5</version.com.google.code.gson>
         <testng.verson>6.10</testng.verson>
         <orbit.version.commons.io>2.4.0.wso2v1</orbit.version.commons.io>
-        <pax.logging.api.version>1.10.1</pax.logging.api.version>
+        <common.logging.version>1.2</common.logging.version>
         <orbit.version.commons.lang>2.6.0.wso2v1</orbit.version.commons.lang>
         <version.commons.codec>1.12</version.commons.codec>
         <xml.unit.verions>2.6.2</xml.unit.verions>
-        <maven.shadeplugin.version>3.2.1</maven.shadeplugin.version>
     </properties>
 </project>
