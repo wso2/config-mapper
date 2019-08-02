@@ -35,7 +35,7 @@
 
     <groupId>org.wso2.config.mapper</groupId>
     <artifactId>config-mapper</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
 
     <name>WSO2 - Configuration mapper</name>
     <description>Configuration mapping engine</description>
