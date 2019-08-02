@@ -19,13 +19,26 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <groupId>org.wso2</groupId>
+        <artifactId>wso2</artifactId>
+        <version>1.2</version>
+    </parent>
+    <scm>
+        <connection>scm:https://github.com/wso2/config-mapper.git</connection>
+        <developerConnection>scm:git:https://github.com/wso2/config-mapper.git</developerConnection>
+        <url>https://github.com/wso2/config-mapper.git</url>
+        <tag>HEAD</tag>
+    </scm>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.wso2.config.mapper</groupId>
     <artifactId>config-mapper</artifactId>
     <version>1.0.0</version>
 
-    <name>WSO2 Carbon - NextGen Configuration</name>
+    <name>WSO2 - Configuration mapper</name>
+    <description>Configuration mapping engine</description>
 
     <dependencies>
         <dependency>
