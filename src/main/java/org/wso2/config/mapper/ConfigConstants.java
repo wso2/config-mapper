@@ -31,6 +31,7 @@ public class ConfigConstants {
 
     static final String ENCRYPT_SECRETS = "encryptSecrets";
     static final String OVERRIDE_CONFIGURATION_ALWAYS = "forceConfigUpdate";
+    static final String AVOID_CONFIGURATION_UPDATE = "avoidConfigUpdate";
     static final String SYSTEM_PROPERTY_PREFIX = "sys:";
     static final String ENVIRONMENT_VARIABLE_PREFIX = "env:";
 
