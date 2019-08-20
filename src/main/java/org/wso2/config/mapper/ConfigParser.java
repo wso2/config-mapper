@@ -75,11 +75,13 @@ public class ConfigParser {
 
         ConfigPaths.setPaths(configFilePath, resourcesDir, outputDir);
         File deploymentConfigurationFile = new File(configFilePath);
+        if (Boolean.getBoolean(ConfigConstants.AVOID_CONFIGURATION_UPDATE)) {
+            return;
+        }
         if (!deploymentConfigurationFile.exists()) {
             // If Deployment.toml didn't exist don't start server.
             log.warn("deployment.toml not found at " + configFilePath);
             return;
-//            throw new FileNotFoundException("deployment.toml not found at " + configFilePath);
         }
         try {
             if (Boolean.getBoolean(ConfigConstants.OVERRIDE_CONFIGURATION_ALWAYS)) {
