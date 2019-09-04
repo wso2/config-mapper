@@ -50,7 +50,7 @@ class JinjaParser {
         JinjavaConfig configurator = JinjavaConfig.newBuilder().withLstripBlocks(true).withTrimBlocks(true).build();
         Jinjava jinjava = new Jinjava(configurator);
         Map<String, Object> dottedKeyMap = getHierarchicalDottedKeyMap(context.getTemplateData());
-        templateFiles.entrySet().parallelStream().forEach((templateFile) -> {
+        templateFiles.entrySet().stream().forEach((templateFile) -> {
             String renderedTemplate = "";
             try {
                 String template = FileUtils.readFile(templateFile.getValue());
