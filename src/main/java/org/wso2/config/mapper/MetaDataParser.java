@@ -103,6 +103,11 @@ class MetaDataParser {
                                           String metadataFilePath)
             throws ConfigParserException {
 
+        ChangedFileSet changedFileSet = new ChangedFileSet();
+        // Avoid read hash value if -DavoidConfigHashRead enabled
+        if (Boolean.getBoolean(ConfigConstants.AVOID_CONFIGURATION_HASH_READ) == true) {
+            return changedFileSet;
+        }
         File metaDataFile = new File(metadataFilePath);
         if (!metaDataFile.exists()) {
             return new ChangedFileSet(true, Collections.emptyList(), Collections.emptyList());
@@ -114,7 +119,6 @@ class MetaDataParser {
         } catch (IOException e) {
             throw new ConfigParserException("Metadata File couldn't Read", e);
         }
-        ChangedFileSet changedFileSet = new ChangedFileSet();
         for (String deploymentConfigurationPath : deploymentConfigurationPaths) {
             Map<String, String> actualLastModifiedValues = readLastModifiedValues(basePath,
                     deploymentConfigurationPath);
@@ -150,13 +154,18 @@ class MetaDataParser {
             throw new ConfigParserException("Metadata File couldn't Read", e);
         }
         ChangedFileSet changedFileSet = new ChangedFileSet();
+        boolean avoidConfigHash = Boolean.getBoolean(ConfigConstants.AVOID_CONFIGURATION_HASH_READ);
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String path = (String) entry.getKey();
-            String lastModifiedValue = (String) entry.getValue();
-            String actualLastModifiedValue = readLastModifiedValue(Paths.get(basePath, path).toString());
-            if (StringUtils.isNotEmpty(actualLastModifiedValue)) {
-                if (!lastModifiedValue.equals(actualLastModifiedValue)) {
-                    changedFileSet.addChangedFile(path);
+            // If -DavoidConfigHashRead=true, then read toml file hash only.
+            if (!avoidConfigHash || Paths.get(basePath, path).toString().equals(
+                    ConfigParser.ConfigPaths.getConfigFilePath())) {
+                String lastModifiedValue = (String) entry.getValue();
+                String actualLastModifiedValue = readLastModifiedValue(Paths.get(basePath, path).toString());
+                if (StringUtils.isNotEmpty(actualLastModifiedValue)) {
+                    if (!lastModifiedValue.equals(actualLastModifiedValue)) {
+                        changedFileSet.addChangedFile(path);
+                    }
                 }
             }
         }
