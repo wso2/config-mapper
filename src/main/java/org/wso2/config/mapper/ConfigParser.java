@@ -105,24 +105,32 @@ public class ConfigParser {
                         ConfigPaths.getMetadataPropertyPath());
                 if (isDeploymentRequired(templateFileSet, configFileSet, referencesVariableChanged)) {
 
-                    if (templateFileSet.isChanged()) {
-                        // Log changed files.
-                        templateFileSet.getChangedFiles().
-                                forEach(path -> log.warn("Configurations templates Changed in :" + path));
-                        templateFileSet.getNewFiles().
-                                forEach(path -> log.warn("New Configurations found in :" + path));
+                    if (templateFileSet.isFirstTimeStartup() && configFileSet.isFirstTimeStartup()) {
+                        // If first time loading, then print log
+                        log.info("Initializing configurations with deployment configurations");
+                    } else if (Boolean.getBoolean(ConfigConstants.AVOID_CONFIGURATION_HASH_READ)) {
+                        // If second time loading with avoidHashRead enable, then print log
+                        log.info("Applying configurations with deployment configurations");
+                    } else {
+                        if (templateFileSet.isChanged()) {
+                            // Log changed files.
+                            templateFileSet.getChangedFiles().
+                                    forEach(path -> log.warn("Configurations templates Changed in :" + path));
+                            templateFileSet.getNewFiles().
+                                    forEach(path -> log.warn("New Configurations found in :" + path));
 
-                        log.info("Applying Configurations upon new Templates");
-                    }
-                    if (configFileSet.isChanged()) {
-                        // Log changed files.
-                        configFileSet.getChangedFiles().
-                                forEach(path -> log.warn("Configurations Changed in :" + path));
-                        log.debug("Overriding files in configuration directory " + outputDir);
-                    }
-                    if (referencesVariableChanged) {
-                        log.warn("Configuration value changed in references, Overriding files in the " +
-                                "configuration directory" + outputDir);
+                            log.info("Applying Configurations upon new Templates");
+                        }
+                        if (configFileSet.isChanged()) {
+                            // Log changed files.
+                            configFileSet.getChangedFiles().
+                                    forEach(path -> log.warn("Configurations Changed in :" + path));
+                            log.warn("Overriding files in configuration directory " + outputDir);
+                        }
+                        if (referencesVariableChanged) {
+                            log.warn("Configuration value changed in references, Overriding files in the " +
+                                     "configuration directory" + outputDir);
+                        }
                     }
                     deployAndStoreMetadata();
                 }
