@@ -118,7 +118,7 @@ public class ConfigParser {
                         // Log changed files.
                         configFileSet.getChangedFiles().
                                 forEach(path -> log.warn("Configurations Changed in :" + path));
-                        log.warn("Overriding files in configuration directory " + outputDir);
+                        log.debug("Overriding files in configuration directory " + outputDir);
                     }
                     if (referencesVariableChanged) {
                         log.warn("Configuration value changed in references, Overriding files in the " +
@@ -179,7 +179,7 @@ public class ConfigParser {
         Context context = new Context();
         Set<String> deployedFileSet = deploy(context, ConfigPaths.getOutputDir());
 
-        log.info("Writing Metadata Entries...");
+        log.debug("Writing Metadata Entries...");
         Set<String> entries = new HashSet<>(Arrays.asList(ConfigPaths.getTemplateFileDir(),
                                                           ConfigPaths.getInferConfigurationFilePath(),
                                                           ConfigPaths.getDefaultValueFilePath(),
