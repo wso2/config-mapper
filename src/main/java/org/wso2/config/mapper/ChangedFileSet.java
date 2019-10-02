@@ -29,16 +29,18 @@ class ChangedFileSet {
     private boolean changed;
     private List<String> changedFiles;
     private List<String> newFiles;
+    private boolean isFirstTimeStartup;
 
     ChangedFileSet() {
-        this(false, new ArrayList<>(), new ArrayList<>());
+        this(false, new ArrayList<>(), new ArrayList<>(), false);
     }
 
-    ChangedFileSet(boolean changed, List<String> changedFiles, List<String> newFiles) {
+    ChangedFileSet(boolean changed, List<String> changedFiles, List<String> newFiles, boolean isFirstTimeStartup) {
 
         this.changed = changed;
         this.changedFiles = changedFiles;
         this.newFiles = newFiles;
+        this.isFirstTimeStartup = isFirstTimeStartup;
     }
 
     boolean isChanged() {
@@ -65,5 +67,9 @@ class ChangedFileSet {
     void addNewFile(String path) {
         changed = true;
         newFiles.add(path);
+    }
+
+    boolean isFirstTimeStartup() {
+        return isFirstTimeStartup;
     }
 }

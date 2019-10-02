@@ -105,12 +105,12 @@ class MetaDataParser {
 
         ChangedFileSet changedFileSet = new ChangedFileSet();
         // Avoid read hash value if -DavoidConfigHashRead enabled
-        if (Boolean.getBoolean(ConfigConstants.AVOID_CONFIGURATION_HASH_READ) == true) {
+        if (Boolean.getBoolean(ConfigConstants.AVOID_CONFIGURATION_HASH_READ)) {
             return changedFileSet;
         }
         File metaDataFile = new File(metadataFilePath);
         if (!metaDataFile.exists()) {
-            return new ChangedFileSet(true, Collections.emptyList(), Collections.emptyList());
+            return new ChangedFileSet(true, Collections.emptyList(), Collections.emptyList(), true);
         }
         Properties properties = new Properties();
 
@@ -143,7 +143,7 @@ class MetaDataParser {
 
         File metaDataFile = new File(metadataFilePath);
         if (!metaDataFile.exists()) {
-            return new ChangedFileSet(true, Collections.emptyList(), Collections.emptyList());
+            return new ChangedFileSet(true, Collections.emptyList(), Collections.emptyList(), true);
         }
         Properties properties = new Properties();
 
