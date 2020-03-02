@@ -180,10 +180,13 @@ public class ReferenceResolver {
                     if (value instanceof String) {
                         listIterator.remove();
                         listIterator.add(resolveStringWithSysVarPlaceholders((String) value, references));
+                    } else if (value instanceof Map) {
+                        resolveSystemProperties((Map<String, Object>) value, references);
                     }
                 }
+            } else if (entry.getValue() instanceof Map) {
+                resolveSystemProperties((Map<String, Object>) entry.getValue(), references);
             }
-
         }
     }
 
@@ -266,8 +269,12 @@ public class ReferenceResolver {
                     if (value instanceof String) {
                         values.remove();
                         values.add(resolveStringWithEnvVarPlaceholders((String) value, references));
+                    } else if (value instanceof Map) {
+                        resolveEnvVariables((Map<String, Object>) value, references);
                     }
                 }
+            } else if (entry.getValue() instanceof Map) {
+                resolveEnvVariables((Map<String, Object>) entry.getValue(), references);
             }
         }
     }
