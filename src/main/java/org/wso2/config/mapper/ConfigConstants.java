@@ -37,4 +37,6 @@ public class ConfigConstants {
     static final String SYSTEM_PROPERTY_PREFIX = "sys:";
     static final String ENVIRONMENT_VARIABLE_PREFIX = "env:";
 
+    static final String AVOID_RESOLVING_ENV_AND_SYS_VARIABLES = "avoidResolvingEnvAndSysVariables";
+
 }

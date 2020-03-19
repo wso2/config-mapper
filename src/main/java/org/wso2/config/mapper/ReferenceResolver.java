@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.wso2.config.mapper.ConfigConstants.AVOID_RESOLVING_ENV_AND_SYS_VARIABLES;
+
 /**
  * Resolves placeholder references in the configuration.
  * Placeholders can be added to any of the following categories, and their combinations.
@@ -68,8 +70,31 @@ public class ReferenceResolver {
      */
     public static void resolve(Context context) throws ConfigParserException {
 
-        resolve(context.getTemplateData(), context.getSecrets(), context.getResolvedSystemProperties(),
-                context.getResolvedEnvironmentVariables());
+        // Avoid resolving Environment variable and System property if avoidResolvingEnvAndSysVariable
+        // system property is set to true
+        String avoidResolvingEnvAndSysVariable = System.getProperty(AVOID_RESOLVING_ENV_AND_SYS_VARIABLES);
+
+        if ("true".equalsIgnoreCase(avoidResolvingEnvAndSysVariable)) {
+            resolveWithoutDynamicVariable(context.getTemplateData(), context.getSecrets());
+        } else {
+            resolve(context.getTemplateData(), context.getSecrets(), context.getResolvedSystemProperties(),
+                    context.getResolvedEnvironmentVariables());
+        }
+    }
+
+    /**
+     * Resolves the placeholder strings for template data and secrets. Environment variables and system properties
+     * will not be resolved.
+     *
+     * @param templateData template data
+     * @param secrets      map of secrets
+     * @throws ConfigParserException Config parser exception
+     */
+    static void resolveWithoutDynamicVariable(Map<String, Object> templateData, Map<String, String> secrets)
+            throws ConfigParserException {
+
+        resolveSecrets(templateData, secrets);
+        resolveConfigReferences(templateData);
     }
 
     /**
