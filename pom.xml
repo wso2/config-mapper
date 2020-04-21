@@ -31,6 +31,7 @@
         <url>https://github.com/wso2/config-mapper.git</url>
         <tag>HEAD</tag>
     </scm>
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.wso2.config.mapper</groupId>
@@ -156,6 +157,18 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <preparationGoals>clean install</preparationGoals>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
     <distributionManagement>
@@ -180,7 +193,7 @@
             <releases>
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>
-                <checksumPolicy>fail</checksumPolicy>
+                <checksumPolicy>ignore</checksumPolicy>
             </releases>
         </repository>
     </repositories>
