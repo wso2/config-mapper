@@ -31,12 +31,15 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static org.wso2.config.mapper.ConfigConstants.ONLY_PARSE_CONFIGURATION;
 
 /**
  * Configuration parser class. Entry point to the config parsing logic.
@@ -58,6 +61,8 @@ public class ConfigParser {
 
     private static final String META_DATA_DIRECTORY = ".metadata";
     private static final String JINJA_TEMPLATE_EXTENSION = ".j2";
+
+    private static Map<String, Object> parsedConfigs;
 
     private ConfigParser() {
     }
@@ -261,7 +266,10 @@ public class ConfigParser {
         ReferenceResolver.resolve(context);
         UnitResolver.updateUnits(context, ConfigPaths.getUnitResolverFilePath());
         Validator.validate(context, ConfigPaths.getValidatorFilePath());
-
+        parsedConfigs = context.getTemplateData();
+        if (Boolean.getBoolean(ONLY_PARSE_CONFIGURATION)) {
+            return new HashMap<>();
+        }
         Map<String, File> fileNames = getTemplatedFilesMap(templateDir);
         return JinjaParser.parse(context, fileNames);
     }
@@ -310,6 +318,15 @@ public class ConfigParser {
             fileName = fileName.substring(0, (fileName.length() - JINJA_TEMPLATE_EXTENSION.length()));
         }
         return fileName;
+    }
+
+    /**
+     * Provides the parsed configs which include parsed env variables , system variables , default values.
+     *
+     * @return Parsed Configurations.
+     */
+    public static Map<String, Object> getParsedConfigs() {
+        return parsedConfigs;
     }
 
     /**

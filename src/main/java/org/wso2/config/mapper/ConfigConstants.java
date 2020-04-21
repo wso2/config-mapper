@@ -33,6 +33,7 @@ public class ConfigConstants {
     static final String OVERRIDE_CONFIGURATION_ALWAYS = "forceConfigUpdate";
     static final String AVOID_CONFIGURATION_UPDATE = "avoidConfigUpdate";
     static final String AVOID_CONFIGURATION_HASH_READ = "avoidConfigHashRead";
+    static final String ONLY_PARSE_CONFIGURATION = "configParseOnly";
 
     static final String SYSTEM_PROPERTY_PREFIX = "sys:";
     static final String ENVIRONMENT_VARIABLE_PREFIX = "env:";
