@@ -29,13 +29,13 @@
         <connection>scm:https://github.com/wso2/config-mapper.git</connection>
         <developerConnection>scm:git:https://github.com/wso2/config-mapper.git</developerConnection>
         <url>https://github.com/wso2/config-mapper.git</url>
-        <tag>HEAD</tag>
+        <tag>v1.0.8</tag>
     </scm>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.wso2.config.mapper</groupId>
     <artifactId>config-mapper</artifactId>
-    <version>1.0.8-SNAPSHOT</version>
+    <version>1.0.8</version>
 
     <name>WSO2 - Configuration mapper</name>
     <description>Configuration mapping engine</description>
