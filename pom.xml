@@ -26,7 +26,7 @@
         <version>1.2</version>
     </parent>
     <scm>
-        <connection>scm:https://github.com/wso2/config-mapper.git</connection>
+        <connection>scm:git:https://github.com/wso2/config-mapper.git</connection>
         <developerConnection>scm:git:https://github.com/wso2/config-mapper.git</developerConnection>
         <url>https://github.com/wso2/config-mapper.git</url>
         <tag>HEAD</tag>
