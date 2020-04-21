@@ -31,6 +31,16 @@
         <url>https://github.com/wso2/config-mapper.git</url>
         <tag>HEAD</tag>
     </scm>
+
+    <scm>
+        <url>https://github.com/wso2/micro-integrator.git</url>
+        <developerConnection>scm:git:https://github.com/wso2/micro-integrator.git</developerConnection>
+        <connection>scm:git:https://github.com/wso2/micro-integrator.git</connection>
+        <tag>HEAD</tag>
+    </scm>
+
+
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.wso2.config.mapper</groupId>
@@ -180,7 +190,7 @@
             <releases>
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>
-                <checksumPolicy>fail</checksumPolicy>
+                <checksumPolicy>ignore</checksumPolicy>
             </releases>
         </repository>
     </repositories>
