@@ -94,7 +94,7 @@ public class ConfigParser {
                 if (log.isDebugEnabled()) {
                     log.debug("Forceful override configuration");
                 }
-                deployAndStoreMetadata();
+                deployAndStoreMetadata(true);
             } else {
                 List<String> configurationPaths =
                         Arrays.asList(ConfigPaths.getTemplateFileDir(),
@@ -108,14 +108,11 @@ public class ConfigParser {
                         MetaDataParser.getChangedFiles(outputDir, ConfigPaths.getMetadataFilePath());
                 boolean referencesVariableChanged = MetaDataParser.isReferencesChanged(
                         ConfigPaths.getMetadataPropertyPath());
-                if (isDeploymentRequired(templateFileSet, configFileSet, referencesVariableChanged)) {
-
+                boolean isDeploymentRequired = isDeploymentRequired(templateFileSet, configFileSet,
+                                                                    referencesVariableChanged);
                     if (templateFileSet.isFirstTimeStartup() && configFileSet.isFirstTimeStartup()) {
                         // If first time loading, then print log
                         log.info("Initializing configurations with deployment configurations");
-                    } else if (Boolean.getBoolean(ConfigConstants.AVOID_CONFIGURATION_HASH_READ)) {
-                        // If second time loading with avoidHashRead enable, then print log
-                        log.info("Applying configurations with deployment configurations");
                     } else {
                         if (templateFileSet.isChanged()) {
                             // Log changed files.
@@ -137,8 +134,7 @@ public class ConfigParser {
                                      "configuration directory" + outputDir);
                         }
                     }
-                    deployAndStoreMetadata();
-                }
+                deployAndStoreMetadata(isDeploymentRequired);
             }
 
         } catch (IOException e) {
@@ -182,7 +178,7 @@ public class ConfigParser {
         FileUtils.writeDirectory(configFilePath, backupPath, getTemplatedFilesMap(templateDir).keySet());
     }
 
-    private static void deployAndStoreMetadata() throws IOException, ConfigParserException {
+    private static void deployAndStoreMetadata(boolean isDeploymentRequired) throws IOException, ConfigParserException {
 
         if (log.isDebugEnabled()) {
             log.debug("Backed up the configurations into " + ConfigPaths.getOutputDir() + File.separator +
@@ -190,8 +186,10 @@ public class ConfigParser {
         }
         backupConfigurations(ConfigPaths.getOutputDir(), Paths.get(ConfigPaths.getOutputDir(), "backup").toString());
         Context context = new Context();
-        Set<String> deployedFileSet = deploy(context, ConfigPaths.getOutputDir());
-
+        Set<String> deployedFileSet = deploy(isDeploymentRequired, context, ConfigPaths.getOutputDir());
+        if (deployedFileSet.isEmpty()) {
+            return;
+        }
         log.debug("Writing Metadata Entries...");
         Set<String> entries = new HashSet<>(Arrays.asList(ConfigPaths.getTemplateFileDir(),
                                                           ConfigPaths.getInferConfigurationFilePath(),
@@ -222,12 +220,12 @@ public class ConfigParser {
      * @throws ConfigParserException if unable to create parent directory.
      *
      */
-    private static Set<String> deploy(Context context, String outputFilePath) throws IOException,
-                                                                                     ConfigParserException {
+    private static Set<String> deploy(boolean isDeploymentRequired, Context context, String outputFilePath)
+            throws IOException, ConfigParserException {
         File outputDir = new File(outputFilePath);
         Set<String> changedFileSet = new HashSet<>();
         if (outputDir.exists() && outputDir.isDirectory()) {
-            Map<String, String> outputs = parse(context);
+            Map<String, String> outputs = parse(isDeploymentRequired, context);
             for (Map.Entry<String, String> entry : outputs.entrySet()) {
                 File outputFile = new File(outputDir, entry.getKey());
                 if (!outputFile.getParentFile().exists() && !outputFile.getParentFile().mkdirs()) {
@@ -256,7 +254,7 @@ public class ConfigParser {
      * @return Map containing list of values containing file paths and content.
      * @throws ConfigParserException
      */
-    static Map<String, String> parse(Context context) throws ConfigParserException {
+    static Map<String, String> parse(boolean isDeploymentRequired, Context context) throws ConfigParserException {
 
         File templateDir = checkTemplateDirExistence(ConfigPaths.getTemplateFileDir());
         context = TomlParser.parse(context);
@@ -267,8 +265,11 @@ public class ConfigParser {
         UnitResolver.updateUnits(context, ConfigPaths.getUnitResolverFilePath());
         Validator.validate(context, ConfigPaths.getValidatorFilePath());
         parsedConfigs = context.getTemplateData();
-        if (Boolean.getBoolean(ONLY_PARSE_CONFIGURATION)) {
+        if (Boolean.getBoolean(ONLY_PARSE_CONFIGURATION) || !isDeploymentRequired) {
             return new HashMap<>();
+        } else if (Boolean.getBoolean(ConfigConstants.AVOID_CONFIGURATION_HASH_READ)) {
+            // If second time loading with avoidHashRead enable, then print log
+            log.info("Applying configurations with deployment configurations");
         }
         Map<String, File> fileNames = getTemplatedFilesMap(templateDir);
         return JinjaParser.parse(context, fileNames);
