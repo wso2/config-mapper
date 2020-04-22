@@ -78,7 +78,7 @@ public class ConfigParserTest {
 
         ConfigParser.ConfigPaths.setMetadataFilePaths(newConfigDirectoryPath);
 
-        Map<String, String> outputFileContentMap = ConfigParser.parse(context);
+        Map<String, String> outputFileContentMap = ConfigParser.parse(true, context);
 
         File resultDir = new File(expectedOutputDirPath);
         for (Map.Entry<String, String> entry : outputFileContentMap.entrySet()) {
