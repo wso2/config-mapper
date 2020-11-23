@@ -34,5 +34,6 @@ public class ConfigConstants {
     static final String AVOID_CONFIGURATION_UPDATE = "avoidConfigUpdate";
     static final String SYSTEM_PROPERTY_PREFIX = "sys:";
     static final String ENVIRONMENT_VARIABLE_PREFIX = "env:";
+    static final String RUNTIME_SECRETS = "runtime_secrets";
 
 }

@@ -126,8 +126,12 @@ class TomlParser {
 
         Map<String, String> context = new LinkedHashMap<>();
         TomlTable table = result.getTable(ConfigConstants.SECRET_PROPERTY_MAP_NAME);
+        TomlTable runtimeSecretsConfig = result.getTable(ConfigConstants.RUNTIME_SECRETS);
         if (table != null) {
             table.dottedKeySet().forEach(key -> context.put(key, table.getString(key)));
+        }
+        if (runtimeSecretsConfig != null) {
+            runtimeSecretsConfig.dottedKeySet().forEach(key -> context.put(key, runtimeSecretsConfig.getString(key)));
         }
         return context;
     }
