@@ -57,6 +57,7 @@ public class ReferenceResolver {
     private static final String PLACEHOLDER_SUFFIX = "}";
     private static final String PLAIN_TEXT_VALUE_PLACE_HOLDER_PREFIX = "[";
     private static final String PLAIN_TEXT_VALUE_PLACE_HOLDER_SUFFIX = "]";
+    private static final String RUNTIME_SECRETS_ENABLED = "enable";
 
     private ReferenceResolver() {
 
@@ -100,11 +101,11 @@ public class ReferenceResolver {
     /**
      * Resolves the placeholder strings.
      *
-     * @param templateData      template data
-     * @param secrets           map of secrets
-     * @param resolvedSystemProperties          map of resolved system properties
-     * @param resolvedEnvironmentVariables      map of resolved environment varialbles
-     * @throws ConfigParserException            Config parser exception
+     * @param templateData                 template data
+     * @param secrets                      map of secrets
+     * @param resolvedSystemProperties     map of resolved system properties
+     * @param resolvedEnvironmentVariables map of resolved environment varialbles
+     * @throws ConfigParserException Config parser exception
      */
     static void resolve(Map<String, Object> templateData, Map<String, String> secrets, Map<String,
             String> resolvedSystemProperties, Map<String, String> resolvedEnvironmentVariables)
@@ -255,6 +256,11 @@ public class ReferenceResolver {
                     PLACEHOLDER_SUFFIX);
             if (secretRefs != null) {
                 for (String secretRef : secretRefs) {
+                    if (Boolean.parseBoolean((String) secrets.get(RUNTIME_SECRETS_ENABLED))) {
+                        if (!secrets.containsKey(secretRef)) {
+                            secrets.put(secretRef, "");
+                        }
+                    }
                     Object secretValue = secrets.get(secretRef);
                     if (secretValue == null) {
                         throw new ConfigParserException("Secret references can't be resolved for " + secretRef);
@@ -330,12 +336,12 @@ public class ReferenceResolver {
                         CONF_PLACEHOLDER_PREFIX + key + PLACEHOLDER_SUFFIX),
                         Matcher.quoteReplacement(value.toString()));
                 context.put(k, existingValue);
-            } else if (existingValue instanceof  ArrayList) {
+            } else if (existingValue instanceof ArrayList) {
                 ArrayList<String> modifiedValueList = new ArrayList<>();
                 for (String item : (ArrayList<String>) existingValue) {
                     item = item.replaceAll(Pattern.quote(
                             CONF_PLACEHOLDER_PREFIX + key + PLACEHOLDER_SUFFIX),
-                                           Matcher.quoteReplacement(value.toString()));
+                            Matcher.quoteReplacement(value.toString()));
                     modifiedValueList.add(item);
                 }
                 context.put(k, modifiedValueList);

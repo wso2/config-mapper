@@ -81,6 +81,7 @@ public class ReferenceResolverTest {
 
         Map secrets = new HashMap();
         secrets.put("b.c.d", "sssssss");
+        secrets.put("enable", "true");
         Map resolvedSystemProperties = new HashMap();
         Map resolvedEnvironmentVariables = new HashMap();
         ReferenceResolver.resolve(context, secrets, resolvedSystemProperties, resolvedEnvironmentVariables);
@@ -92,6 +93,7 @@ public class ReferenceResolverTest {
         Map resolvedSystemProperties = new HashMap();
         Map resolvedEnvironmentVariables = new HashMap();
         secrets.put("b.c.d", "[sssssss]");
+        secrets.put("enable", "false");
         try {
             ReferenceResolver.resolve(context, secrets, resolvedSystemProperties, resolvedEnvironmentVariables);
             Assert.fail();
@@ -105,7 +107,7 @@ public class ReferenceResolverTest {
         Map secrets = new HashMap();
         Map resolvedSystemProperties = new HashMap();
         Map resolvedEnvironmentVariables = new HashMap();
-
+        secrets.put("enable", "false");
         try {
             ReferenceResolver.resolve(context, secrets, resolvedSystemProperties, resolvedEnvironmentVariables);
             Assert.fail();
