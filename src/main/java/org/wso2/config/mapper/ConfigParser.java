@@ -126,8 +126,8 @@ public class ConfigParser {
                         if (configFileSet.isChanged()) {
                             // Log changed files.
                             configFileSet.getChangedFiles().
-                                    forEach(path -> log.warn("Configurations Changed in :" + path));
-                            log.warn("Overriding files in configuration directory " + outputDir);
+                                    forEach(path -> log.info("Configurations Changed in :" + path));
+                            log.info("Overriding files in configuration directory " + outputDir);
                         }
                         if (referencesVariableChanged) {
                             log.warn("Configuration value changed in references, Overriding files in the " +
