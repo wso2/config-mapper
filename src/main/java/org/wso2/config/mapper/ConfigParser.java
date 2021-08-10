@@ -19,6 +19,7 @@
 
 package org.wso2.config.mapper;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.config.mapper.model.Context;
@@ -29,7 +30,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -180,11 +180,14 @@ public class ConfigParser {
 
     private static void deployAndStoreMetadata(boolean isDeploymentRequired) throws IOException, ConfigParserException {
 
+        String backupPath = System.getProperty("config.backup.path");
+        backupPath = StringUtils.isNotEmpty(backupPath) ?  backupPath : (ConfigPaths.getOutputDir() + File.separator +
+                "backup");
+
         if (log.isDebugEnabled()) {
-            log.debug("Backed up the configurations into " + ConfigPaths.getOutputDir() + File.separator +
-                      "backup");
+            log.debug("Backed up the configurations into " + backupPath);
         }
-        backupConfigurations(ConfigPaths.getOutputDir(), Paths.get(ConfigPaths.getOutputDir(), "backup").toString());
+        backupConfigurations(ConfigPaths.getOutputDir(), backupPath);
         Context context = new Context();
         Set<String> deployedFileSet = deploy(isDeploymentRequired, context, ConfigPaths.getOutputDir());
         if (deployedFileSet.isEmpty()) {
