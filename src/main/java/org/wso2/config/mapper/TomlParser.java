@@ -128,7 +128,7 @@ class TomlParser {
         TomlTable table = result.getTable(ConfigConstants.SECRET_PROPERTY_MAP_NAME);
         TomlTable runtimeSecretsConfig = result.getTable(ConfigConstants.RUNTIME_SECRETS);
         if (table != null) {
-            table.dottedKeySet().forEach(key -> context.put(key, table.getString(key)));
+            table.dottedKeySet().forEach(key -> context.put(filterDottedContent(key), table.getString(key)));
         }
         if (runtimeSecretsConfig != null) {
             runtimeSecretsConfig.dottedKeySet().forEach(key -> context.put(key, runtimeSecretsConfig.getString(key)));
@@ -136,6 +136,12 @@ class TomlParser {
         return context;
     }
 
+    static String filterDottedContent(String key) {
+        if (key.startsWith("\"") && key.endsWith("\"")) {
+            return key.substring(1, key.length() - 1);
+        }
+        return key;
+    }
     static Context parse(Context context) throws ConfigParserException {
         try {
             TomlParseResult parseResult = Toml.parse(Paths.get(ConfigParser.ConfigPaths.getConfigFilePath()));
