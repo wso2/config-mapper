@@ -49,6 +49,7 @@ public class TomlParserTest {
 
         ConfigParser.ConfigPaths.setConfigFilePath(deploymentConfiguration);
         context = TomlParser.parse(context);
+        ReferenceResolver.resolve(context);
         parsedValueMap.putAll(context.getTemplateData());
     }
 
@@ -73,6 +74,7 @@ public class TomlParserTest {
                 {"a.'b.c'", "value4"},
                 {"a.'d.e'", "value5"},
                 {"single_quote_test", result},
+                {"secrets.'truststore.password'", "password"}
         };
     }
 

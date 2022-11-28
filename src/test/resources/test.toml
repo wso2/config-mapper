@@ -23,3 +23,6 @@ a.b.d = "data 4"
 
 [[single_quote_test]]
 'a.b' = "value6"
+
+[secrets]
+"truststore.password" = "password"
