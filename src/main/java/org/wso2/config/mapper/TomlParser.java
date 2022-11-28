@@ -136,12 +136,18 @@ class TomlParser {
         return context;
     }
 
+    /**
+     * Extract key surrounded by double quotes.
+     * @param key
+     * @return key value without surrounding double quotes
+     */
     static String filterDottedContent(String key) {
         if (key.startsWith("\"") && key.endsWith("\"")) {
             return key.substring(1, key.length() - 1);
         }
         return key;
     }
+
     static Context parse(Context context) throws ConfigParserException {
         try {
             TomlParseResult parseResult = Toml.parse(Paths.get(ConfigParser.ConfigPaths.getConfigFilePath()));
