@@ -41,7 +41,7 @@ import java.util.Set;
 class TomlParser {
 
     private static final Log log = LogFactory.getLog(TomlParser.class);
-
+    private static final String QUOTE = "\"";
     private TomlParser() { }
 
     private static Map<String, Object> parseToml(TomlParseResult result) {
@@ -128,12 +128,24 @@ class TomlParser {
         TomlTable table = result.getTable(ConfigConstants.SECRET_PROPERTY_MAP_NAME);
         TomlTable runtimeSecretsConfig = result.getTable(ConfigConstants.RUNTIME_SECRETS);
         if (table != null) {
-            table.dottedKeySet().forEach(key -> context.put(key, table.getString(key)));
+            table.dottedKeySet().forEach(key -> context.put(extractQuotedContent(key), table.getString(key)));
         }
         if (runtimeSecretsConfig != null) {
             runtimeSecretsConfig.dottedKeySet().forEach(key -> context.put(key, runtimeSecretsConfig.getString(key)));
         }
         return context;
+    }
+
+    /**
+     * Extract key surrounded by double quotes.
+     * @param key
+     * @return key value without surrounding double quotes, returns null if key is null.
+     */
+    static String extractQuotedContent(String key) {
+        if (key != null && key.startsWith(QUOTE) && key.endsWith(QUOTE)) {
+            return key.substring(1, key.length() - 1);
+        }
+        return key;
     }
 
     static Context parse(Context context) throws ConfigParserException {
