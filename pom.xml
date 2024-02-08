@@ -236,7 +236,7 @@
     <properties>
         <maven.spotbugsplugin.version>3.1.10</maven.spotbugsplugin.version>
         <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
-        <version.checkstyle>7.8.2</version.checkstyle>
+        <version.checkstyle>8.29</version.checkstyle>
         <version.jinjava>2.6.0</version.jinjava>
         <version.cava-toml>0.5.0</version.cava-toml>
         <version.com.google.code.gson>2.9.0</version.com.google.code.gson>
