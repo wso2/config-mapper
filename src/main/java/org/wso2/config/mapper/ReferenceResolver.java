@@ -391,7 +391,7 @@ public class ReferenceResolver {
                 if (resolvedValue != null) {
                     resolvedEnvironmentVariables.put(ref, resolvedValue);
                     value = value.replaceAll(Pattern.quote(ENV_VAR_PLACEHOLDER_PREFIX + ref + PLACEHOLDER_SUFFIX),
-                            resolvedValue);
+                            Matcher.quoteReplacement(resolvedValue));
                 } else {
                     throw new ConfigParserException("Environment variable " + ref + " not defined in system");
                 }
