@@ -28,10 +28,10 @@ import java.util.Map;
 public class Context {
 
 
-    private Map<String, Object> templateData;
-    private Map<String, String> resolvedSystemProperties;
-    private Map<String, String> resolvedEnvironmentVariables;
-    private Map<String, String> secrets;
+    private final Map<String, Object> templateData;
+    private final Map<String, String> resolvedSystemProperties;
+    private final Map<String, String> resolvedEnvironmentVariables;
+    private final Map<String, String> secrets;
 
     public Context() {
 
@@ -43,21 +43,25 @@ public class Context {
 
 
 
+    @edu.umd.cs.findbugs.annotations.SuppressWarnings("EI_EXPOSE_REP")
     public Map<String, Object> getTemplateData() {
 
         return templateData;
     }
 
+    @edu.umd.cs.findbugs.annotations.SuppressWarnings("EI_EXPOSE_REP")
     public Map<String, String> getResolvedSystemProperties() {
 
         return resolvedSystemProperties;
     }
 
+    @edu.umd.cs.findbugs.annotations.SuppressWarnings("EI_EXPOSE_REP")
     public Map<String, String> getResolvedEnvironmentVariables() {
 
         return resolvedEnvironmentVariables;
     }
 
+    @edu.umd.cs.findbugs.annotations.SuppressWarnings("EI_EXPOSE_REP")
     public Map<String, String> getSecrets() {
 
         return secrets;

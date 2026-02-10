@@ -329,6 +329,7 @@ public class ConfigParser {
      *
      * @return Parsed Configurations.
      */
+    @edu.umd.cs.findbugs.annotations.SuppressWarnings("MS_EXPOSE_REP")
     public static Map<String, Object> getParsedConfigs() {
         return parsedConfigs;
     }
