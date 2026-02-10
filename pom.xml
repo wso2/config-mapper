@@ -36,7 +36,7 @@
 
     <groupId>org.wso2.config.mapper</groupId>
     <artifactId>config-mapper</artifactId>
-    <version>1.0.27-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
 
     <name>WSO2 - Configuration mapper</name>
     <description>Configuration mapping engine</description>
@@ -145,7 +145,7 @@
                     <xmlOutput>true</xmlOutput>
                     <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
                     <!--Exclude sources-->
-                    <!--<excludeFilterFile>${maven.spotbugsplugin.exclude.file}</excludeFilterFile>-->
+                    <excludeFilterFile>spotbugs/spotbugs-exclude.xml</excludeFilterFile>
                 </configuration>
                 <executions>
                     <execution>
@@ -234,10 +234,10 @@
     </pluginRepositories>
 
     <properties>
-        <maven.spotbugsplugin.version>3.1.10</maven.spotbugsplugin.version>
+        <maven.spotbugsplugin.version>4.8.6.0</maven.spotbugsplugin.version>
         <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
         <version.checkstyle>7.8.2</version.checkstyle>
-        <version.jinjava>2.7.5</version.jinjava>
+        <version.jinjava>2.8.3</version.jinjava>
         <version.cava-toml>0.5.0</version.cava-toml>
         <version.com.google.code.gson>2.9.0</version.com.google.code.gson>
         <testng.verson>6.10</testng.verson>
