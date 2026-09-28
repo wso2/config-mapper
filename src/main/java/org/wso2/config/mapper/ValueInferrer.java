@@ -30,7 +30,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -47,6 +50,13 @@ class ValueInferrer {
 
     private static final Log log = LogFactory.getLog(ValueInferrer.class);
 
+    /**
+     * Directive that lets one value block of an infer rule inherit the entries of a sibling value block of the
+     * same rule. Its value is either a single sibling value or a list of them, and it is resolved away before the
+     * rules are applied.
+     */
+    private static final String EXTENDS_DIRECTIVE = "$extends";
+
     static Context infer(Context context, String inferConfigFilePath) throws ConfigParserException {
 
         Map<String, Object> inferredContext = infer(context.getTemplateData(), inferConfigFilePath);
@@ -58,7 +68,7 @@ class ValueInferrer {
     static Map<String, Object> infer(Map<String, Object> context, String inferConfigFilePath)
             throws ConfigParserException {
 
-        Map<String, Object> enrichedContext = readConfiguration(inferConfigFilePath);
+        Map<String, Object> enrichedContext = resolveInheritance(readConfiguration(inferConfigFilePath));
         enrichedContext = getInferredValues(context, enrichedContext);
         enrichedContext.putAll(context);
         return enrichedContext;
@@ -74,6 +84,131 @@ class ValueInferrer {
         } catch (IOException e) {
             throw new ConfigParserException("Error while reading inferring file", e);
         }
+    }
+
+    /**
+     * Flatten the "$extends" directives of every value block in the infer rules, so that the rest of the inferring
+     * logic only ever sees complete blocks.
+     *
+     * A block inherits everything its parent declares and may override any of it; what the block declares itself
+     * always wins, and an explicit null declines an inherited entry altogether. This keeps a value that is
+     * introduced for the newest variant from having to be copy-pasted into every older one, while still letting a
+     * single variant opt out.
+     *
+     * infer.json
+     *
+     *   "preserve_previous_product_behaviour.version": {
+     *     "IS_7.3.0": {
+     *       "saml.validate_assertion_consumer_url_for_signed_requests": false
+     *     },
+     *     "IS_7.2.0": {
+     *       "$extends": "IS_7.3.0",
+     *       "ai_services.http_client_use_system_properties": false
+     *     },
+     *     "IS_7.1.0": {
+     *       "$extends": "IS_7.2.0",
+     *       "ai_services.http_client_use_system_properties": null
+     *     }
+     *   }
+     *
+     * output for preserve_previous_product_behaviour.version = "IS_7.2.0"
+     *
+     *   saml.validate_assertion_consumer_url_for_signed_requests = false
+     *   ai_services.http_client_use_system_properties = false
+     *
+     * output for preserve_previous_product_behaviour.version = "IS_7.1.0"
+     *
+     *   saml.validate_assertion_consumer_url_for_signed_requests = false
+     *
+     * @param inferringData infer rules read from the infer file
+     * @return the same rules with every "$extends" resolved
+     * @throws ConfigParserException if a directive points at an unknown block or the chain is cyclic
+     */
+    private static Map<String, Object> resolveInheritance(Map<String, Object> inferringData)
+            throws ConfigParserException {
+
+        if (inferringData == null) {
+            return null;
+        }
+        for (Map.Entry<String, Object> inferRule : inferringData.entrySet()) {
+            if (!(inferRule.getValue() instanceof Map)) {
+                continue;
+            }
+            Map<String, Object> valueBlocks = (Map<String, Object>) inferRule.getValue();
+            Map<String, Object> resolvedBlocks = new LinkedHashMap<>();
+            for (String blockName : valueBlocks.keySet()) {
+                resolveBlock(inferRule.getKey(), blockName, valueBlocks, resolvedBlocks, new LinkedHashSet<>());
+            }
+            inferRule.setValue(resolvedBlocks);
+        }
+        return inferringData;
+    }
+
+    private static Object resolveBlock(String inferKey, String blockName, Map<String, Object> valueBlocks,
+                                       Map<String, Object> resolvedBlocks, Set<String> beingResolved)
+            throws ConfigParserException {
+
+        if (resolvedBlocks.containsKey(blockName)) {
+            return resolvedBlocks.get(blockName);
+        }
+        Object block = valueBlocks.get(blockName);
+        if (!(block instanceof Map)) {
+            resolvedBlocks.put(blockName, block);
+            return block;
+        }
+        if (!beingResolved.add(blockName)) {
+            throw new ConfigParserException("Cyclic \"" + EXTENDS_DIRECTIVE + "\" chain in infer rule \"" +
+                    inferKey + "\": " + String.join(" -> ", beingResolved) + " -> " + blockName);
+        }
+
+        Map<String, Object> declared = (Map<String, Object>) block;
+        Map<String, Object> resolved = new LinkedHashMap<>();
+        for (String parentName : getParents(inferKey, blockName, declared.get(EXTENDS_DIRECTIVE))) {
+            if (!valueBlocks.containsKey(parentName)) {
+                throw new ConfigParserException("Unknown \"" + EXTENDS_DIRECTIVE + "\" target \"" + parentName +
+                        "\" referred by \"" + blockName + "\" in infer rule \"" + inferKey + "\"");
+            }
+            Object parent = resolveBlock(inferKey, parentName, valueBlocks, resolvedBlocks, beingResolved);
+            if (parent instanceof Map) {
+                resolved.putAll((Map<String, Object>) parent);
+            }
+        }
+        declared.forEach((key, value) -> {
+            if (EXTENDS_DIRECTIVE.equals(key)) {
+                return;
+            }
+            if (value == null) {
+                // An explicit null declines an inherited entry, so a block can opt out of one thing its parent
+                // declares without giving up the rest.
+                resolved.remove(key);
+            } else {
+                resolved.put(key, value);
+            }
+        });
+
+        beingResolved.remove(blockName);
+        resolvedBlocks.put(blockName, resolved);
+        return resolved;
+    }
+
+    private static List<String> getParents(String inferKey, String blockName, Object directiveValue)
+            throws ConfigParserException {
+
+        List<String> parents = new ArrayList<>();
+        if (directiveValue == null) {
+            return parents;
+        }
+        if (directiveValue instanceof String) {
+            parents.add((String) directiveValue);
+        } else if (directiveValue instanceof List) {
+            for (Object parent : (List) directiveValue) {
+                parents.add(String.valueOf(parent));
+            }
+        } else {
+            throw new ConfigParserException("\"" + EXTENDS_DIRECTIVE + "\" of \"" + blockName + "\" in infer rule \"" +
+                    inferKey + "\" must be a value name or a list of value names");
+        }
+        return parents;
     }
 
     private static Map<String, Object> getInferredValues(Map<String, Object> configurationValues,

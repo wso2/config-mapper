@@ -100,6 +100,22 @@
       "datasource.carbon.driver": "com.oracle.Driver"
     }
   },
+  "preserve_previous_product_behaviour.version": {
+    "IS_7.3.0": {
+      "saml.validate_assertion_consumer_url_for_signed_requests": false,
+      "webappscommon.inherit_app_level_custom_layout": false
+    },
+    "IS_7.2.0": {
+      "$extends": "IS_7.3.0",
+      "ai_services.http_client_use_system_properties": false
+    },
+    "IS_7.1.0": {
+      "$extends": "IS_7.2.0",
+      "oauth.return_sp_id_to_apps": true,
+      "webappscommon.inherit_app_level_custom_layout": true,
+      "ai_services.http_client_use_system_properties": null
+    }
+  },
   "tenant_mgt.tenant_manager.type": {
     "jdbc": {
       "tenant_mgt.tenant_manager.config_builder": "org.wso2.carbon.user.core.config.multitenancy.SimpleRealmConfigBuilder",

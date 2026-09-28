@@ -31,6 +31,7 @@ import java.util.Map;
 public class ValueInferrerTest {
 
     private static final String INFER_JSON = "infer.json";
+    private static final String CYCLIC_INFER_JSON = "infer-cyclic-extends.json";
 
     @Test(dataProvider = "contextProvider")
     public void testParse(Map<String, Object> context, String key, Object expectedValue) throws ConfigParserException {
@@ -52,6 +53,12 @@ public class ValueInferrerTest {
         jdbcContext.put("user_store.type", "jdbc");
         readOnlyLdapContext.put("user_store.type", "read_only_ldap");
         invalidContext.put("user_store.type", "invalid_value");
+        Map<String, Object> is710Context = new HashMap<>();
+        Map<String, Object> is720Context = new HashMap<>();
+        Map<String, Object> is730Context = new HashMap<>();
+        is710Context.put("preserve_previous_product_behaviour.version", "IS_7.1.0");
+        is720Context.put("preserve_previous_product_behaviour.version", "IS_7.2.0");
+        is730Context.put("preserve_previous_product_behaviour.version", "IS_7.3.0");
         Map<String, Object> variableContext = new HashMap<>();
         variableContext.put("datasource.apim.type", "mysql");
         variableContext.put("datasource.abc.type", "mysql");
@@ -72,12 +79,30 @@ public class ValueInferrerTest {
                 {variableContext, "datasource.cde.driver", null},
                 {variableContext, "datasource.carbon.driver", "com.oracle.Driver"},
                 {jdbcContext, "tenant_mgt.tenant_manager.config_builder", "org.wso2.carbon.user.core.config" +
-                        ".multitenancy.SimpleRealmConfigBuilder"}
+                        ".multitenancy.SimpleRealmConfigBuilder"},
+                // A value declared only in the newest block reaches every block that extends it, transitively.
+                {is730Context, "saml.validate_assertion_consumer_url_for_signed_requests", false},
+                {is720Context, "saml.validate_assertion_consumer_url_for_signed_requests", false},
+                {is710Context, "saml.validate_assertion_consumer_url_for_signed_requests", false},
+                // An explicit null declines an inherited entry without giving up the rest of the chain.
+                {is710Context, "ai_services.http_client_use_system_properties", null},
+                // What a block declares itself overrides what it inherits.
+                {is710Context, "webappscommon.inherit_app_level_custom_layout", true},
+                {is720Context, "webappscommon.inherit_app_level_custom_layout", false},
+                // Inheritance only flows from the extended block, never back into it.
+                {is730Context, "ai_services.http_client_use_system_properties", null},
+                {is720Context, "oauth.return_sp_id_to_apps", null}
         };
     }
 
-    @Test
-    public void testInfer() {
+    @Test(expectedExceptions = ConfigParserException.class,
+            expectedExceptionsMessageRegExp = "Cyclic .*IS_7\\.3\\.0 -> IS_7\\.2\\.0 -> IS_7\\.3\\.0")
+    public void testCyclicExtends() throws ConfigParserException {
 
+        String inferConfiguration =
+                FileUtils.getFile("src", "test", "resources", CYCLIC_INFER_JSON).getAbsolutePath();
+        Map<String, Object> context = new HashMap<>();
+        context.put("preserve_previous_product_behaviour.version", "IS_7.3.0");
+        ValueInferrer.infer(context, inferConfiguration);
     }
 }

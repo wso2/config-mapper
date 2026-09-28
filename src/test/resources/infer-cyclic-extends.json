@@ -1,0 +1,12 @@
+{
+  "preserve_previous_product_behaviour.version": {
+    "IS_7.3.0": {
+      "$extends": "IS_7.2.0",
+      "saml.validate_assertion_consumer_url_for_signed_requests": false
+    },
+    "IS_7.2.0": {
+      "$extends": "IS_7.3.0",
+      "ai_services.http_client_use_system_properties": false
+    }
+  }
+}
