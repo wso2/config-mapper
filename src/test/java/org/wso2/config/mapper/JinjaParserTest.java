@@ -19,21 +19,27 @@
 
 package org.wso2.config.mapper;
 
+import com.hubspot.jinjava.Jinjava;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.wso2.config.mapper.model.Context;
+import org.xml.sax.SAXNotRecognizedException;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 /**
  * Test cases for converting flat dotted keys into hierarchical key model expected by Jinja parser.
@@ -139,11 +145,42 @@ public class JinjaParserTest {
     @Test
     public void testXmlWellFormedCheck() {
 
-        Assert.assertTrue(XmlValueEscaper.isWellFormed("<a><b x=\"1&amp;2\">p&lt;w</b></a>"));
-        Assert.assertTrue(XmlValueEscaper.isWellFormed("<a><![CDATA[p&<w]]></a>"));
-        Assert.assertFalse(XmlValueEscaper.isWellFormed("<a>pass&word</a>"));
-        Assert.assertFalse(XmlValueEscaper.isWellFormed("<a b=\"x\"y\"/>"));
-        Assert.assertFalse(XmlValueEscaper.isWellFormed("<a><b></a>"));
+        SAXParserFactory parserFactory = XmlValueEscaper.PARSER_FACTORY;
+        Assert.assertNotNull(parserFactory);
+        Assert.assertTrue(XmlValueEscaper.isWellFormed(parserFactory, "<a><b x=\"1&amp;2\">p&lt;w</b></a>"));
+        Assert.assertTrue(XmlValueEscaper.isWellFormed(parserFactory, "<a><![CDATA[p&<w]]></a>"));
+        Assert.assertTrue(XmlValueEscaper.isWellFormed(parserFactory, "<a>" + XmlValueEscaper.escape("&#0;") + "</a>"));
+        Assert.assertFalse(XmlValueEscaper.isWellFormed(parserFactory, "<a>pass&word</a>"));
+        Assert.assertFalse(XmlValueEscaper.isWellFormed(parserFactory, "<a b=\"x\"y\"/>"));
+        Assert.assertFalse(XmlValueEscaper.isWellFormed(parserFactory, "<a><b></a>"));
+        Assert.assertFalse(XmlValueEscaper.isWellFormed(parserFactory, "<a>&#0;</a>"));
+    }
+
+    @Test
+    public void testParserFactoryNotCreatedWhenFeatureUnsupported() {
+
+        Assert.assertNull(XmlValueEscaper.createParserFactory(UnsupportedFeatureParserFactory.class.getName()));
+    }
+
+    @Test
+    public void testParserFactoryNotCreatedWhenParserSetupFails() {
+
+        Assert.assertNull(XmlValueEscaper.createParserFactory(FailingParserFactory.class.getName()));
+    }
+
+    @Test
+    public void testXmlOutputUnchangedWithoutParserFactory() {
+
+        String template = "<UserManager><Password>{{super_admin.password}}</Password></UserManager>";
+        String renderedTemplate = "<UserManager><Password>pass&word</Password></UserManager>";
+        Map<String, Object> context = new HashMap<>();
+        context.put("super_admin", new HashMap<>(Collections.singletonMap("password", "pass&word")));
+
+        Assert.assertEquals(JinjaParser.getWellFormedXml(new Jinjava(), template, context, renderedTemplate,
+                "user-mgt.xml", null), renderedTemplate);
+        Assert.assertEquals(JinjaParser.getWellFormedXml(new Jinjava(), template, context, renderedTemplate,
+                "user-mgt.xml", XmlValueEscaper.PARSER_FACTORY),
+                "<UserManager><Password>pass&amp;word</Password></UserManager>");
     }
 
     @Test
@@ -215,6 +252,9 @@ public class JinjaParserTest {
                 {"a&#38;b&#x26;c&lt;d&gt;e&quot;f&apos;g", "a&#38;b&#x26;c&lt;d&gt;e&quot;f&apos;g"},
                 {"a&b&amp;c&", "a&amp;b&amp;c&amp;"},
                 {"&#xZZ;", "&amp;#xZZ;"},
+                {"&#9;&#x10FFFF;&#xE000;", "&#9;&#x10FFFF;&#xE000;"},
+                {"&#0;&#x1F;&#xD800;&#xFFFE;&#x110000;", "&amp;#0;&amp;#x1F;&amp;#xD800;&amp;#xFFFE;&amp;#x110000;"},
+                {"&#99999999999;", "&amp;#99999999999;"},
                 {"a<b>c", "a&lt;b&gt;c"},
                 {"a\"b'c", "a&quot;b&apos;c"},
                 {"<![CDATA[p&<w]]>", "<![CDATA[p&<w]]>"},
@@ -222,5 +262,52 @@ public class JinjaParserTest {
                 {"<![CDATA[unterminated&", "&lt;![CDATA[unterminated&amp;"},
                 {"", ""},
         };
+    }
+
+    /**
+     * Parser factory that does not support any feature.
+     */
+    public static class UnsupportedFeatureParserFactory extends SAXParserFactory {
+
+        @Override
+        public SAXParser newSAXParser() throws ParserConfigurationException {
+
+            throw new ParserConfigurationException("Not supported");
+        }
+
+        @Override
+        public void setFeature(String name, boolean value) throws SAXNotRecognizedException {
+
+            throw new SAXNotRecognizedException(name);
+        }
+
+        @Override
+        public boolean getFeature(String name) throws SAXNotRecognizedException {
+
+            throw new SAXNotRecognizedException(name);
+        }
+    }
+
+    /**
+     * Parser factory that accepts all features but cannot create a parser.
+     */
+    public static class FailingParserFactory extends SAXParserFactory {
+
+        @Override
+        public SAXParser newSAXParser() throws ParserConfigurationException {
+
+            throw new ParserConfigurationException("Not supported");
+        }
+
+        @Override
+        public void setFeature(String name, boolean value) {
+
+        }
+
+        @Override
+        public boolean getFeature(String name) {
+
+            return false;
+        }
     }
 }

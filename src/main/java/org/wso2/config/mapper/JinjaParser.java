@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.xml.parsers.SAXParserFactory;
 
 /**
  * Parser based on Jinja templating engine. When the configuration and the relevant Jinja template is provided this
@@ -58,7 +59,7 @@ class JinjaParser {
                 renderedTemplate = jinjava.render(template, dottedKeyMap);
                 if (templateFile.getKey().endsWith(XML_FILE_EXTENSION)) {
                     renderedTemplate = getWellFormedXml(jinjava, template, dottedKeyMap, renderedTemplate,
-                            templateFile.getKey());
+                            templateFile.getKey(), XmlValueEscaper.PARSER_FACTORY);
                 }
 
             } catch (ConfigParserException e) {
@@ -72,20 +73,22 @@ class JinjaParser {
 
     /**
      * If the rendered XML is malformed, re-render the template with XML escaped values. Well-formed output is
-     * returned unchanged.
+     * returned unchanged, and so is all output when a secure XML parser is not available.
      */
-    private static String getWellFormedXml(Jinjava jinjava, String template, Map<String, Object> dottedKeyMap,
-                                           String renderedTemplate, String fileName) {
+    static String getWellFormedXml(Jinjava jinjava, String template, Map<String, Object> dottedKeyMap,
+                                   String renderedTemplate, String fileName, SAXParserFactory parserFactory) {
 
-        if (renderedTemplate.trim().isEmpty() || XmlValueEscaper.isWellFormed(renderedTemplate)) {
+        if (parserFactory == null || renderedTemplate.trim().isEmpty()
+                || XmlValueEscaper.isWellFormed(parserFactory, renderedTemplate)) {
             return renderedTemplate;
         }
         String escapedTemplate = jinjava.render(template, XmlValueEscaper.escapeContext(dottedKeyMap));
-        if (XmlValueEscaper.isWellFormed(escapedTemplate)) {
-            log.warn("Escaped XML special characters in configuration values rendered into " + fileName);
+        if (XmlValueEscaper.isWellFormed(parserFactory, escapedTemplate)) {
+            if (log.isDebugEnabled()) {
+                log.debug("Escaped XML special characters in configuration values rendered into " + fileName);
+            }
             return escapedTemplate;
         }
-        log.warn("Rendered configuration file " + fileName + " is not well-formed XML");
         return renderedTemplate;
     }
 

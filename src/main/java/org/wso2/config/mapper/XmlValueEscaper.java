@@ -18,6 +18,8 @@
  */
 package org.wso2.config.mapper;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.xml.XMLConstants;
+import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
@@ -40,6 +43,7 @@ import javax.xml.parsers.SAXParserFactory;
  */
 final class XmlValueEscaper {
 
+    private static final Log log = LogFactory.getLog(XmlValueEscaper.class);
     private static final String CDATA_START = "<![CDATA[";
     private static final String CDATA_END = "]]>";
     private static final Pattern XML_REFERENCE =
@@ -50,31 +54,51 @@ final class XmlValueEscaper {
             "http://xml.org/sax/features/external-parameter-entities";
     private static final String LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
 
+    static final SAXParserFactory PARSER_FACTORY = createParserFactory(null);
+
     private XmlValueEscaper() {
     }
 
     /**
-     * Checks whether the given content is well-formed XML. External entities and DTDs are never loaded.
+     * Creates a SAX parser factory that never loads external entities or DTDs.
      *
-     * @param xml content to check.
-     * @return true if the content is well-formed XML.
+     * @param factoryClassName parser factory implementation to use, or null for the default implementation.
+     * @return the parser factory, or null if a parser with these features cannot be created.
      */
-    static boolean isWellFormed(String xml) {
+    static SAXParserFactory createParserFactory(String factoryClassName) {
 
         try {
-            SAXParserFactory factory = SAXParserFactory.newInstance();
+            SAXParserFactory factory = factoryClassName == null ? SAXParserFactory.newInstance() :
+                    SAXParserFactory.newInstance(factoryClassName, XmlValueEscaper.class.getClassLoader());
             factory.setNamespaceAware(false);
             factory.setValidating(false);
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
             factory.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
             factory.setFeature(LOAD_EXTERNAL_DTD, false);
-            factory.newSAXParser().parse(new InputSource(new StringReader(xml)), new DefaultHandler());
+            factory.newSAXParser();
+            return factory;
+        } catch (ParserConfigurationException | SAXException | FactoryConfigurationError e) {
+            log.warn("Unable to create a secure XML parser. Values rendered into XML configuration files will not "
+                    + "be escaped", e);
+            return null;
+        }
+    }
+
+    /**
+     * Checks whether the given content is well-formed XML.
+     *
+     * @param parserFactory parser factory created by {@link #createParserFactory(String)}.
+     * @param xml           content to check.
+     * @return true if the content is well-formed XML.
+     */
+    static boolean isWellFormed(SAXParserFactory parserFactory, String xml) {
+
+        try {
+            parserFactory.newSAXParser().parse(new InputSource(new StringReader(xml)), new DefaultHandler());
             return true;
-        } catch (SAXException | IOException e) {
+        } catch (ParserConfigurationException | SAXException | IOException e) {
             return false;
-        } catch (ParserConfigurationException e) {
-            return true;
         }
     }
 
@@ -135,7 +159,8 @@ final class XmlValueEscaper {
             switch (c) {
                 case '&':
                     referenceMatcher.region(i, value.length());
-                    escaped.append(referenceMatcher.lookingAt() ? "&" : "&amp;");
+                    boolean isReference = referenceMatcher.lookingAt() && isValidReference(referenceMatcher.group());
+                    escaped.append(isReference ? "&" : "&amp;");
                     break;
                 case '<':
                     escaped.append("&lt;");
@@ -155,5 +180,25 @@ final class XmlValueEscaper {
             i++;
         }
         return escaped.toString();
+    }
+
+    /**
+     * Checks whether a character reference refers to a character that is allowed in XML.
+     */
+    private static boolean isValidReference(String reference) {
+
+        if (!reference.startsWith("&#")) {
+            return true;
+        }
+        int codePoint;
+        try {
+            codePoint = reference.startsWith("&#x") ?
+                    Integer.parseInt(reference.substring(3, reference.length() - 1), 16) :
+                    Integer.parseInt(reference.substring(2, reference.length() - 1));
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        return codePoint == 0x9 || codePoint == 0xA || codePoint == 0xD || (codePoint >= 0x20 && codePoint <= 0xD7FF)
+                || (codePoint >= 0xE000 && codePoint <= 0xFFFD) || (codePoint >= 0x10000 && codePoint <= 0x10FFFF);
     }
 }
