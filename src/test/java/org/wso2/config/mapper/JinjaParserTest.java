@@ -23,8 +23,15 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import org.wso2.config.mapper.model.Context;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -120,6 +127,100 @@ public class JinjaParserTest {
                 {"a.b.d", "value2"},
                 {"e", "value3"},
                 {"f.g", 1234}
+        };
+    }
+
+    @Test(dataProvider = "xmlEscapeDataProvider")
+    public void testXmlValueEscaping(String input, String expectedOutput) {
+
+        Assert.assertEquals(XmlValueEscaper.escape(input), expectedOutput);
+    }
+
+    @Test
+    public void testXmlWellFormedCheck() {
+
+        Assert.assertTrue(XmlValueEscaper.isWellFormed("<a><b x=\"1&amp;2\">p&lt;w</b></a>"));
+        Assert.assertTrue(XmlValueEscaper.isWellFormed("<a><![CDATA[p&<w]]></a>"));
+        Assert.assertFalse(XmlValueEscaper.isWellFormed("<a>pass&word</a>"));
+        Assert.assertFalse(XmlValueEscaper.isWellFormed("<a b=\"x\"y\"/>"));
+        Assert.assertFalse(XmlValueEscaper.isWellFormed("<a><b></a>"));
+    }
+
+    @Test
+    public void testEscapeContextKeepsNonStringValues() {
+
+        Map<String, Object> nested = new HashMap<>();
+        nested.put("password", "a&b");
+        nested.put("port", 9443);
+        Map<String, Object> context = new HashMap<>();
+        context.put("admin", nested);
+        context.put("list", Arrays.asList("x<y", true));
+
+        Map<String, Object> escaped = XmlValueEscaper.escapeContext(context);
+
+        Assert.assertEquals(((Map) escaped.get("admin")).get("password"), "a&amp;b");
+        Assert.assertEquals(((Map) escaped.get("admin")).get("port"), 9443);
+        Assert.assertEquals(escaped.get("list"), Arrays.asList("x&lt;y", true));
+        Assert.assertEquals(nested.get("password"), "a&b", "Original context should not be modified");
+    }
+
+    @Test
+    public void testXmlTemplatesRenderedWithEscapedValuesOnlyWhenMalformed() throws Exception {
+
+        Path templateDir = Files.createTempDirectory("templates");
+        try {
+            File xmlTemplate = templateDir.resolve("user-mgt.xml.j2").toFile();
+            File propertiesTemplate = templateDir.resolve("test.properties.j2").toFile();
+            Files.write(xmlTemplate.toPath(), ("<UserManager><Password>{{super_admin.password}}</Password>"
+                    + "<Store url=\"{{database.url}}\"/></UserManager>").getBytes(StandardCharsets.UTF_8));
+            Files.write(propertiesTemplate.toPath(), "password={{super_admin.password}}"
+                    .getBytes(StandardCharsets.UTF_8));
+            Map<String, File> templateFiles = new LinkedHashMap<>();
+            templateFiles.put("user-mgt.xml", xmlTemplate);
+            templateFiles.put("test.properties", propertiesTemplate);
+
+            Map<String, String> outputs = JinjaParser.parse(getContext("pass&amp;word", "jdbc:h2:a?x=1&amp;y=2"),
+                    templateFiles);
+            Assert.assertEquals(outputs.get("user-mgt.xml").trim(), "<UserManager><Password>pass&amp;word</Password>"
+                    + "<Store url=\"jdbc:h2:a?x=1&amp;y=2\"/></UserManager>");
+            Assert.assertEquals(outputs.get("test.properties").trim(), "password=pass&amp;word");
+
+            outputs = JinjaParser.parse(getContext("p&ss<wo\"rd", "jdbc:h2:a?x=1&amp;y=2"), templateFiles);
+            Assert.assertEquals(outputs.get("user-mgt.xml").trim(), "<UserManager><Password>p&amp;ss&lt;wo&quot;rd"
+                    + "</Password><Store url=\"jdbc:h2:a?x=1&amp;y=2\"/></UserManager>");
+            Assert.assertEquals(outputs.get("test.properties").trim(), "password=p&ss<wo\"rd");
+
+            outputs = JinjaParser.parse(getContext("<![CDATA[pass&word]]>", "jdbc:h2:a"), templateFiles);
+            Assert.assertEquals(outputs.get("user-mgt.xml").trim(), "<UserManager><Password><![CDATA[pass&word]]>"
+                    + "</Password><Store url=\"jdbc:h2:a\"/></UserManager>");
+        } finally {
+            org.apache.commons.io.FileUtils.deleteDirectory(templateDir.toFile());
+        }
+    }
+
+    private Context getContext(String password, String databaseUrl) {
+
+        Context context = new Context();
+        context.getTemplateData().put("super_admin.password", password);
+        context.getTemplateData().put("database.url", databaseUrl);
+        return context;
+    }
+
+    @DataProvider(name = "xmlEscapeDataProvider")
+    public Object[][] xmlEscapeData() {
+        return new Object[][]{
+                {"SafePass123", "SafePass123"},
+                {"pass&word", "pass&amp;word"},
+                {"pass&amp;word", "pass&amp;word"},
+                {"a&#38;b&#x26;c&lt;d&gt;e&quot;f&apos;g", "a&#38;b&#x26;c&lt;d&gt;e&quot;f&apos;g"},
+                {"a&b&amp;c&", "a&amp;b&amp;c&amp;"},
+                {"&#xZZ;", "&amp;#xZZ;"},
+                {"a<b>c", "a&lt;b&gt;c"},
+                {"a\"b'c", "a&quot;b&apos;c"},
+                {"<![CDATA[p&<w]]>", "<![CDATA[p&<w]]>"},
+                {"x&<![CDATA[&]]>&", "x&amp;<![CDATA[&]]>&amp;"},
+                {"<![CDATA[unterminated&", "&lt;![CDATA[unterminated&amp;"},
+                {"", ""},
         };
     }
 }

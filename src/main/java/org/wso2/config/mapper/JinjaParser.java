@@ -38,6 +38,7 @@ import java.util.Map;
 class JinjaParser {
 
     private static final Log log = LogFactory.getLog(JinjaParser.class);
+    private static final String XML_FILE_EXTENSION = ".xml";
 
 
     private JinjaParser() {
@@ -55,6 +56,10 @@ class JinjaParser {
             try {
                 String template = FileUtils.readFile(templateFile.getValue());
                 renderedTemplate = jinjava.render(template, dottedKeyMap);
+                if (templateFile.getKey().endsWith(XML_FILE_EXTENSION)) {
+                    renderedTemplate = getWellFormedXml(jinjava, template, dottedKeyMap, renderedTemplate,
+                            templateFile.getKey());
+                }
 
             } catch (ConfigParserException e) {
                 log.error("Error while parsing Jinja template", e);
@@ -63,6 +68,25 @@ class JinjaParser {
         });
         return outputs;
 
+    }
+
+    /**
+     * If the rendered XML is malformed, re-render the template with XML escaped values. Well-formed output is
+     * returned unchanged.
+     */
+    private static String getWellFormedXml(Jinjava jinjava, String template, Map<String, Object> dottedKeyMap,
+                                           String renderedTemplate, String fileName) {
+
+        if (renderedTemplate.trim().isEmpty() || XmlValueEscaper.isWellFormed(renderedTemplate)) {
+            return renderedTemplate;
+        }
+        String escapedTemplate = jinjava.render(template, XmlValueEscaper.escapeContext(dottedKeyMap));
+        if (XmlValueEscaper.isWellFormed(escapedTemplate)) {
+            log.warn("Escaped XML special characters in configuration values rendered into " + fileName);
+            return escapedTemplate;
+        }
+        log.warn("Rendered configuration file " + fileName + " is not well-formed XML");
+        return renderedTemplate;
     }
 
     static Map<String, Object> getHierarchicalDottedKeyMap(Map<String, Object> dottedKeyMap)
