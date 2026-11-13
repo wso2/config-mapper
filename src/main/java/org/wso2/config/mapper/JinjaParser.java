@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.xml.parsers.SAXParserFactory;
 
 /**
  * Parser based on Jinja templating engine. When the configuration and the relevant Jinja template is provided this
@@ -38,6 +39,7 @@ import java.util.Map;
 class JinjaParser {
 
     private static final Log log = LogFactory.getLog(JinjaParser.class);
+    private static final String XML_FILE_EXTENSION = ".xml";
 
 
     private JinjaParser() {
@@ -55,6 +57,10 @@ class JinjaParser {
             try {
                 String template = FileUtils.readFile(templateFile.getValue());
                 renderedTemplate = jinjava.render(template, dottedKeyMap);
+                if (templateFile.getKey().endsWith(XML_FILE_EXTENSION)) {
+                    renderedTemplate = getWellFormedXml(jinjava, template, dottedKeyMap, renderedTemplate,
+                            templateFile.getKey(), XmlValueEscaper.PARSER_FACTORY);
+                }
 
             } catch (ConfigParserException e) {
                 log.error("Error while parsing Jinja template", e);
@@ -63,6 +69,27 @@ class JinjaParser {
         });
         return outputs;
 
+    }
+
+    /**
+     * If the rendered XML is malformed, re-render the template with XML escaped values. Well-formed output is
+     * returned unchanged, and so is all output when a secure XML parser is not available.
+     */
+    static String getWellFormedXml(Jinjava jinjava, String template, Map<String, Object> dottedKeyMap,
+                                   String renderedTemplate, String fileName, SAXParserFactory parserFactory) {
+
+        if (parserFactory == null || renderedTemplate.trim().isEmpty()
+                || XmlValueEscaper.isWellFormed(parserFactory, renderedTemplate)) {
+            return renderedTemplate;
+        }
+        String escapedTemplate = jinjava.render(template, XmlValueEscaper.escapeContext(dottedKeyMap));
+        if (XmlValueEscaper.isWellFormed(parserFactory, escapedTemplate)) {
+            if (log.isDebugEnabled()) {
+                log.debug("Escaped XML special characters in configuration values rendered into " + fileName);
+            }
+            return escapedTemplate;
+        }
+        return renderedTemplate;
     }
 
     static Map<String, Object> getHierarchicalDottedKeyMap(Map<String, Object> dottedKeyMap)
