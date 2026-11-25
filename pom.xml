@@ -245,6 +245,6 @@
         <common.logging.version>1.2</common.logging.version>
         <orbit.version.commons.lang>2.6.0.wso2v1</orbit.version.commons.lang>
         <version.commons.codec>1.16.0</version.commons.codec>
-        <xml.unit.verions>2.6.2</xml.unit.verions>
+        <xml.unit.verions>2.10.0</xml.unit.verions>
     </properties>
 </project>
